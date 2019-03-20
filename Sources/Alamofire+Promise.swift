@@ -31,6 +31,20 @@ extension Alamofire.DataRequest {
     }
 
     /// Adds a handler to be called once the request has finished.
+    public func response<T: DataResponseSerializerProtocol>(queue: DispatchQueue? = nil, responseSerializer: T) -> Promise<(value: T.SerializedObject, response: PMKAlamofireDataResponse)> {
+        return Promise { seal in
+            response(queue: queue, responseSerializer: responseSerializer) { response in
+                switch response.result {
+                case .success(let value):
+                    seal.fulfill((value, PMKAlamofireDataResponse(response)))
+                case .failure(let error):
+                    seal.reject(error)
+                }
+            }
+        }
+    }
+
+    /// Adds a handler to be called once the request has finished.
     public func responseData(queue: DispatchQueue? = nil) -> Promise<(data: Data, response: PMKAlamofireDataResponse)> {
         return Promise { seal in
             responseData(queue: queue) { response in
@@ -45,9 +59,9 @@ extension Alamofire.DataRequest {
     }
 
     /// Adds a handler to be called once the request has finished.
-    public func responseString(queue: DispatchQueue? = nil) -> Promise<(string: String, response: PMKAlamofireDataResponse)> {
+    public func responseString(queue: DispatchQueue? = nil, encoding: String.Encoding? = nil) -> Promise<(string: String, response: PMKAlamofireDataResponse)> {
         return Promise { seal in
-            responseString(queue: queue) { response in
+            responseString(queue: queue, encoding: encoding) { response in
                 switch response.result {
                 case .success(let value):
                     seal.fulfill((value, PMKAlamofireDataResponse(response)))
@@ -62,20 +76,6 @@ extension Alamofire.DataRequest {
     public func responseJSON(queue: DispatchQueue? = nil, options: JSONSerialization.ReadingOptions = .allowFragments) -> Promise<(json: Any, response: PMKAlamofireDataResponse)> {
         return Promise { seal in
             responseJSON(queue: queue, options: options) { response in
-                switch response.result {
-                case .success(let value):
-                    seal.fulfill((value, PMKAlamofireDataResponse(response)))
-                case .failure(let error):
-                    seal.reject(error)
-                }
-            }
-        }
-    }
-
-    /// Adds a handler to be called once the request has finished.
-    public func responsePropertyList(queue: DispatchQueue? = nil, options: PropertyListSerialization.ReadOptions = PropertyListSerialization.ReadOptions()) -> Promise<(plist: Any, response: PMKAlamofireDataResponse)> {
-        return Promise { seal in
-            responsePropertyList(queue: queue, options: options) { response in
                 switch response.result {
                 case .success(let value):
                     seal.fulfill((value, PMKAlamofireDataResponse(response)))
@@ -138,25 +138,55 @@ extension Alamofire.DataRequest {
 }
 
 extension Alamofire.DownloadRequest {
-    public func response(_: PMKNamespacer, queue: DispatchQueue? = nil) -> Promise<DefaultDownloadResponse> {
+    /// Adds a handler to be called once the request has finished.
+    public func response<T: DownloadResponseSerializerProtocol>(queue: DispatchQueue? = nil, responseSerializer: T) -> Promise<(value: T.SerializedObject, response: PMKAlamofireDownloadResponse)> {
         return Promise { seal in
-            response(queue: queue) { response in
-                if let error = response.error {
+            response(queue: queue, responseSerializer: responseSerializer) { response in
+                switch response.result {
+                case .success(let value):
+                    seal.fulfill((value, PMKAlamofireDownloadResponse(response)))
+                case .failure(let error):
                     seal.reject(error)
-                } else {
-                    seal.fulfill(response)
                 }
             }
         }
     }
 
     /// Adds a handler to be called once the request has finished.
-    public func responseData(queue: DispatchQueue? = nil) -> Promise<DownloadResponse<Data>> {
+    public func responseData(queue: DispatchQueue? = nil) -> Promise<(data: Data, response: PMKAlamofireDownloadResponse)> {
         return Promise { seal in
             responseData(queue: queue) { response in
                 switch response.result {
-                case .success:
-                    seal.fulfill(response)
+                case .success(let value):
+                    seal.fulfill((value, PMKAlamofireDownloadResponse(response)))
+                case .failure(let error):
+                    seal.reject(error)
+                }
+            }
+        }
+    }
+
+    /// Adds a handler to be called once the request has finished.
+    public func responseString(queue: DispatchQueue? = nil) -> Promise<(string: String, response: PMKAlamofireDownloadResponse)> {
+        return Promise { seal in
+            responseString(queue: queue) { response in
+                switch response.result {
+                case .success(let value):
+                    seal.fulfill((value, PMKAlamofireDownloadResponse(response)))
+                case .failure(let error):
+                    seal.reject(error)
+                }
+            }
+        }
+    }
+
+    /// Adds a handler to be called once the request has finished.
+    public func responseJSON(queue: DispatchQueue? = nil, options: JSONSerialization.ReadingOptions = .allowFragments) -> Promise<(json: Any, response: PMKAlamofireDownloadResponse)> {
+        return Promise { seal in
+            responseJSON(queue: queue, options: options) { response in
+                switch response.result {
+                case .success(let value):
+                    seal.fulfill((value, PMKAlamofireDownloadResponse(response)))
                 case .failure(let error):
                     seal.reject(error)
                 }
@@ -172,7 +202,8 @@ public struct PMKAlamofireDataResponse {
         request = rawrsp.request
         response = rawrsp.response
         data = rawrsp.data
-        timeline = rawrsp.timeline
+        metrics = rawrsp.metrics
+        serializationDuration = rawrsp.serializationDuration
     }
 
     /// The URL request sent to the server.
@@ -184,6 +215,39 @@ public struct PMKAlamofireDataResponse {
     /// The data returned by the server.
     public let data: Data?
 
-    /// The timeline of the complete lifecycle of the request.
-    public let timeline: Timeline
+    /// The final metrics of the response.
+    public let metrics: URLSessionTaskMetrics?
+
+    /// The time taken to serialize the response.
+    public let serializationDuration: TimeInterval
+}
+
+/// Alamofire.DownloadResponse, but without the `result`, since the Promise represents the `Result`
+public struct PMKAlamofireDownloadResponse {
+    public init<T>(_ rawrsp: Alamofire.DownloadResponse<T>) {
+        request = rawrsp.request
+        response = rawrsp.response
+        fileURL = rawrsp.fileURL
+        resumeData = rawrsp.resumeData
+        metrics = rawrsp.metrics
+        serializationDuration = rawrsp.serializationDuration
+    }
+
+    /// The URL request sent to the server.
+    public let request: URLRequest?
+
+    /// The server's response to the URL request.
+    public let response: HTTPURLResponse?
+
+    /// The final destination URL of the data returned from the server after it is moved.
+    public let fileURL: URL?
+
+    /// The resume data generated if the request was cancelled.
+    public let resumeData: Data?
+
+    /// The final metrics of the response.
+    public let metrics: URLSessionTaskMetrics?
+
+    /// The time taken to serialize the response.
+    public let serializationDuration: TimeInterval
 }
