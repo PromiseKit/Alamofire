@@ -13,7 +13,7 @@ class AlamofireTests: XCTestCase {
 
         let ex = expectation(description: "")
 
-        let rq = Alamofire.request("http://example.com", method: .get).responseJSON().done { rsp in
+        let rq = AF.request("http://example.com", method: .get).responseJSON().done { rsp in
             XCTAssertEqual(json, rsp.json as? NSDictionary)
             ex.fulfill()
         }
@@ -33,7 +33,7 @@ class AlamofireTests: XCTestCase {
     func testDecodable1() {
         
         func getFixture() -> Promise<Fixture> {
-            return Alamofire.request("http://example.com", method: .get).responseDecodable(queue: nil)
+            return AF.request("http://example.com", method: .get).responseDecodable()
         }
         
         let json: NSDictionary = ["key1": "value1", "key2": ["value2A", "value2B"]]
@@ -62,7 +62,7 @@ class AlamofireTests: XCTestCase {
         let ex = expectation(description: "")
         
         firstly {
-            Alamofire.request("http://example.com", method: .get).responseDecodable(Fixture.self)
+            AF.request("http://example.com", method: .get).responseDecodable(Fixture.self)
         }.done { fixture in
             XCTAssert(fixture.key1 == "value1", "Value1 found")
             ex.fulfill()

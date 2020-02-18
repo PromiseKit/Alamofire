@@ -1,6 +1,6 @@
 os: osx
 language: swift
-osx_image: xcode10.2
+osx_image: xcode11.3
 
 branches:
   only: 
@@ -14,16 +14,16 @@ jobs:
   include:
     - &pod
       stage: lint
-      osx_image: xcode8.3
-      env: SWIFT=3.1
+      osx_image: xcode10.2
+      env: SWIFT=5.0
       cache:
         - cocoapods
         - directories:
           - Carthage
       before_install:
-        gem install cocoapods --prerelease --version 1.7.0.beta.3
+        gem install cocoapods --version 1.8.4
       install:
-        carthage bootstrap --no-build PromiseKit
+        carthage bootstrap --no-build --new-resolver PromiseKit
       script: |
         cd Carthage/Checkouts/PromiseKit
         mv .github/PromiseKit.podspec .
@@ -31,56 +31,53 @@ jobs:
         cp -R ../../../Sources Extensions/Alamofire
         pod lib lint --subspec=PromiseKit/Alamofire --fail-fast --swift-version=$SWIFT
     - <<: *pod
-      osx_image: xcode9.2
-      env: SWIFT=3.2
-    - <<: *pod
-      osx_image: xcode9.4
-      env: SWIFT=3.3
-    - <<: *pod
-      osx_image: xcode10.1
-      env: SWIFT=3.4
-    - <<: *pod
-      osx_image: xcode9.2
-      env: SWIFT=4.0
-    - <<: *pod
-      osx_image: xcode9.4
-      env: SWIFT=4.1
-    - <<: *pod
-      osx_image: xcode10.1
-      env: SWIFT=4.2
-    - <<: *pod
-      osx_image: xcode10.2
-      env: SWIFT=4.3
-    - <<: *pod
-      osx_image: xcode10.2
+      osx_image: xcode11.0
       env: SWIFT=5.0
+    - <<: *pod
+      osx_image: xcode11.0
+      env: SWIFT=5.1
+    - <<: *pod
+      osx_image: xcode11.1
+      env: SWIFT=5.1
+    - <<: *pod
+      osx_image: xcode11.2
+      env: SWIFT=5.1
+    - <<: *pod
+      osx_image: xcode11.3
+      env: SWIFT=5.1
       
     - &carthage
       stage: carthage
-      osx_image: xcode9.2
+      osx_image: xcode10.2
       script: |
-        carthage bootstrap --cache-builds
+        carthage bootstrap --cache-builds --new-resolver
         sed -i '' "s/SWIFT_TREAT_WARNINGS_AS_ERRORS = NO;/SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;/" *.xcodeproj/project.pbxproj
         carthage build --no-skip-current
       cache.directories:
         - Carthage
     - <<: *carthage
-      osx_image: xcode9.4
+      osx_image: xcode11.0
     - <<: *carthage
-      osx_image: xcode10.1
+      osx_image: xcode11.1
     - <<: *carthage
-      osx_image: xcode10.2
+      osx_image: xcode11.2
+    - <<: *carthage
+      osx_image: xcode11.3
 
     - &swiftpm
       stage: swiftpm
       osx_image: xcode8.3
       script: swift build
     - <<: *swiftpm
-      osx_image: xcode9.4
-    - <<: *swiftpm
-      osx_image: xcode10.1
-    - <<: *swiftpm
       osx_image: xcode10.2
+    - <<: *swiftpm
+      osx_image: xcode11.0
+    - <<: *swiftpm
+      osx_image: xcode11.1
+    - <<: *swiftpm
+      osx_image: xcode11.2
+    - <<: *swiftpm
+      osx_image: xcode11.3
 
     - &test
       stage: test
@@ -90,8 +87,8 @@ jobs:
       cache.directories:
         - Carthage
       before_install:
-        carthage bootstrap --cache-builds --no-use-binaries
+        carthage bootstrap --cache-builds --new-resolver --no-use-binaries
     - <<: *test
-      xcode_destination: 'platform=iOS Simulator,OS=12.2,name=iPhone SE'
+      xcode_destination: 'platform=iOS Simulator,OS=13.3,name=iPhone SE'
     - <<: *test
-      xcode_destination: 'platform=tvOS Simulator,OS=12.2,name=Apple TV'
+      xcode_destination: 'platform=tvOS Simulator,OS=13.3,name=Apple TV'
