@@ -2,8 +2,6 @@
 
 This project adds promises to [Alamofire](https://github.com/Alamofire/Alamofire).
 
-This project supports Swift 3.1, 3.2, 4.0 and 4.1.
-
 ## Usage
 
 ```swift
